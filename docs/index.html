@@ -1,0 +1,682 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>p(n) — Nth Prime Calculator</title>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Source+Serif+4:ital,wght@0,400;0,600;1,400&display=swap" rel="stylesheet">
+<style>
+:root {
+    --bg: #07090f;
+    --surface: #0e1320;
+    --surface2: #151d30;
+    --border: #1e2a45;
+    --text: #c9d1de;
+    --text-dim: #556178;
+    --accent: #f0a030;
+    --accent-glow: #f0a03040;
+    --result: #ffd580;
+    --cyan: #5eead4;
+    --red: #f87171;
+    --mono: 'JetBrains Mono', monospace;
+    --serif: 'Source Serif 4', Georgia, serif;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--serif);
+    min-height: 100vh;
+    overflow-x: hidden;
+}
+
+/* Ambient glow */
+body::before {
+    content: '';
+    position: fixed;
+    top: -300px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 800px;
+    height: 600px;
+    background: radial-gradient(ellipse, var(--accent-glow) 0%, transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+.container {
+    position: relative;
+    z-index: 1;
+    max-width: 720px;
+    margin: 0 auto;
+    padding: 60px 24px 80px;
+}
+
+/* Header */
+.header {
+    text-align: center;
+    margin-bottom: 48px;
+}
+
+.header h1 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 2.4rem;
+    color: #e8ecf2;
+    letter-spacing: -0.5px;
+    margin-bottom: 4px;
+}
+
+.header h1 .fn {
+    color: var(--accent);
+    font-style: italic;
+}
+
+.header .subtitle {
+    font-family: var(--mono);
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    letter-spacing: 0.5px;
+    margin-top: 8px;
+}
+
+/* Status bar */
+.status-bar {
+    display: flex;
+    justify-content: center;
+    gap: 24px;
+    margin-bottom: 40px;
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+}
+
+.status-bar .dot {
+    display: inline-block;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    margin-right: 6px;
+    position: relative;
+    top: -1px;
+    background: var(--text-dim);
+}
+
+.status-bar .dot.ok { background: #34d399; }
+.status-bar .dot.loading {
+    background: var(--accent);
+    animation: pulse 1.2s ease-in-out infinite;
+}
+.status-bar .dot.error { background: var(--red); }
+
+@keyframes pulse {
+    0%, 100% { opacity: 1; }
+    50% { opacity: 0.3; }
+}
+
+/* Input area */
+.input-area {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px 28px 24px;
+    margin-bottom: 24px;
+}
+
+.input-area label {
+    display: block;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.input-row {
+    display: flex;
+    gap: 12px;
+}
+
+.input-row input {
+    flex: 1;
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    padding: 14px 16px;
+    font-family: var(--mono);
+    font-size: 1.1rem;
+    color: #e8ecf2;
+    outline: none;
+    transition: border-color 0.2s;
+}
+
+.input-row input:focus {
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px var(--accent-glow);
+}
+
+.input-row input::placeholder {
+    color: var(--text-dim);
+    font-size: 0.85rem;
+}
+
+.input-row button {
+    background: var(--accent);
+    border: none;
+    border-radius: 8px;
+    padding: 14px 28px;
+    font-family: var(--mono);
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: #07090f;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.input-row button:hover:not(:disabled) {
+    background: #ffb347;
+    transform: translateY(-1px);
+}
+
+.input-row button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+/* Result card */
+.result-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 28px;
+    display: none;
+}
+
+.result-card.visible { display: block; }
+
+.result-card.error-card {
+    border-color: #f8717140;
+}
+
+.result-label {
+    font-family: var(--mono);
+    font-size: 0.72rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 8px;
+}
+
+.result-value {
+    font-family: var(--mono);
+    font-size: 1.6rem;
+    font-weight: 700;
+    color: var(--result);
+    word-break: break-all;
+    line-height: 1.3;
+}
+
+.result-meta {
+    display: flex;
+    gap: 24px;
+    margin-top: 16px;
+    padding-top: 16px;
+    border-top: 1px solid var(--border);
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text-dim);
+}
+
+.result-meta span.val {
+    color: var(--cyan);
+}
+
+.error-msg {
+    font-family: var(--mono);
+    font-size: 0.9rem;
+    color: var(--red);
+}
+
+/* Quick examples */
+.examples {
+    margin-top: 32px;
+    text-align: center;
+}
+
+.examples .label {
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-bottom: 12px;
+}
+
+.example-chips {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+}
+
+.example-chips button {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: var(--mono);
+    font-size: 0.75rem;
+    color: var(--text);
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.example-chips button:hover {
+    border-color: var(--accent);
+    color: var(--accent);
+}
+
+/* Info section */
+.info {
+    margin-top: 56px;
+    padding-top: 32px;
+    border-top: 1px solid var(--border);
+}
+
+.info h2 {
+    font-family: var(--serif);
+    font-weight: 600;
+    font-size: 1.2rem;
+    color: #c9d1de;
+    margin-bottom: 16px;
+}
+
+.info p, .info li {
+    font-size: 0.92rem;
+    color: var(--text-dim);
+    line-height: 1.7;
+    margin-bottom: 10px;
+}
+
+.info code {
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    background: var(--surface2);
+    padding: 2px 6px;
+    border-radius: 4px;
+    color: var(--cyan);
+}
+
+.info ul {
+    margin-left: 20px;
+    margin-bottom: 16px;
+}
+
+/* Footer */
+.footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    text-align: center;
+    font-family: var(--mono);
+    font-size: 0.7rem;
+    color: var(--text-dim);
+}
+
+.footer a {
+    color: var(--accent);
+    text-decoration: none;
+}
+
+.footer a:hover { text-decoration: underline; }
+
+/* Loading spinner */
+.computing {
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--mono);
+    font-size: 0.82rem;
+    color: var(--text-dim);
+    margin-top: 16px;
+}
+
+.computing.visible { display: flex; }
+
+.spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid var(--border);
+    border-top-color: var(--accent);
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+}
+
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* Responsive */
+@media (max-width: 540px) {
+    .container { padding: 36px 16px 60px; }
+    .header h1 { font-size: 1.8rem; }
+    .input-row { flex-direction: column; }
+    .input-row button { padding: 14px; }
+    .result-value { font-size: 1.2rem; }
+    .result-meta { flex-direction: column; gap: 8px; }
+    .status-bar { flex-direction: column; align-items: center; gap: 8px; }
+}
+</style>
+</head>
+<body>
+
+<div class="container">
+    <div class="header">
+        <h1><span class="fn">p</span>(<span class="fn">n</span>) — Nth Prime</h1>
+        <div class="subtitle">Segmented sieve + precomputed table &middot; Runs in your browser via WASM</div>
+    </div>
+
+    <div class="status-bar">
+        <span><span class="dot" id="wasm-dot"></span><span id="wasm-status">Loading WASM…</span></span>
+        <span><span class="dot" id="table-dot"></span><span id="table-status">Loading table…</span></span>
+    </div>
+
+    <div class="input-area">
+        <label>Enter n — find the n-th prime</label>
+        <div class="input-row">
+            <input type="text" id="n-input" placeholder="e.g. 1000000000" inputmode="numeric" disabled>
+            <button id="compute-btn" disabled>Compute</button>
+        </div>
+        <div class="computing" id="computing">
+            <div class="spinner"></div>
+            <span>Sieving…</span>
+        </div>
+    </div>
+
+    <div class="result-card" id="result-card">
+        <div class="result-label" id="result-label">p(n) =</div>
+        <div class="result-value" id="result-value"></div>
+        <div class="result-meta" id="result-meta"></div>
+    </div>
+
+    <div class="result-card" id="error-card">
+        <div class="error-msg" id="error-msg"></div>
+    </div>
+
+    <div class="examples">
+        <div class="label">Try these</div>
+        <div class="example-chips">
+            <button onclick="tryExample('1000')">p(1,000)</button>
+            <button onclick="tryExample('1000000')">p(10⁶)</button>
+            <button onclick="tryExample('1000000000')">p(10⁹)</button>
+            <button onclick="tryExample('10000000000')">p(10¹⁰)</button>
+            <button onclick="tryExample('50000000000')">p(5×10¹⁰)</button>
+            <button onclick="tryExample('73302249005')">p(max)</button>
+        </div>
+    </div>
+
+    <div class="info">
+        <h2>How it works</h2>
+        <p>
+            This calculator finds the exact <em>n</em>-th prime number for any
+            <code>1 ≤ n ≤ 73,302,249,005</code> — covering all primes up to 2 trillion.
+        </p>
+        <p>The algorithm runs entirely in your browser using WebAssembly:</p>
+        <ul>
+            <li><strong>Precomputed table</strong> — a 521 KB file (<code>pi.dat</code>) stores
+                cumulative prime counts π(k) at every 30-million interval up to 2×10¹².</li>
+            <li><strong>Binary search</strong> — given <em>n</em>, a binary search over the
+                66,667 table entries locates which 30M-wide block contains the <em>n</em>-th prime.</li>
+            <li><strong>Segmented sieve</strong> — a sieve of Eratosthenes runs within that
+                single block to find the exact prime. The small primes (up to √2×10¹² ≈ 1.41M)
+                are precomputed once at startup.</li>
+        </ul>
+        <p>
+            Typical query time is <strong>under 1 second</strong> on modern hardware.
+            No server involved — everything runs client-side.
+        </p>
+
+        <h2>pi.dat format</h2>
+        <p>
+            Binary file with an 8-byte magic (<code>PIFIN01\0</code>), followed by
+            <code>max_x</code>, <code>stride</code>, <code>records</code> (each u64),
+            32 bytes padding, then <code>records</code> × u64 cumulative prime counts.
+        </p>
+    </div>
+
+    <div class="footer">
+        Built by <a href="https://github.com/p-santhiagu">p-santhiagu</a>
+        &middot; Source on <a href="https://github.com/p-santhiagu/nth-prime">GitHub</a>
+    </div>
+</div>
+
+<script>
+// ============================================================
+// State
+// ============================================================
+let Module = null;
+let tableReady = false;
+let wasmReady = false;
+
+const $ = id => document.getElementById(id);
+
+// ============================================================
+// UI helpers
+// ============================================================
+function setStatus(which, state, text) {
+    const dot = $(which + '-dot');
+    const label = $(which + '-status');
+    dot.className = 'dot ' + state;
+    label.textContent = text;
+}
+
+function formatNumber(s) {
+    // Add commas to a numeric string
+    return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+}
+
+function enableInput() {
+    $('n-input').disabled = false;
+    $('compute-btn').disabled = false;
+    $('n-input').focus();
+}
+
+// ============================================================
+// Load WASM
+// ============================================================
+async function loadWasm() {
+    setStatus('wasm', 'loading', 'Loading WASM…');
+    if (typeof NthPrimeModule === 'undefined') {
+        setStatus('wasm', 'error', 'nth_prime.js not found — run build_wasm.sh first');
+        console.error('NthPrimeModule not defined. Build WASM with: ./build_wasm.sh');
+        return;
+    }
+    try {
+        Module = await NthPrimeModule();
+        wasmReady = true;
+        setStatus('wasm', 'ok', 'WASM ready');
+    } catch (e) {
+        setStatus('wasm', 'error', 'WASM failed: ' + e.message);
+        console.error('WASM load error:', e);
+    }
+}
+
+// ============================================================
+// Load pi.dat and initialize
+// ============================================================
+async function loadTable() {
+    setStatus('table', 'loading', 'Loading table…');
+    try {
+        const resp = await fetch('pi.dat');
+        if (!resp.ok) throw new Error('HTTP ' + resp.status);
+        const buf = await resp.arrayBuffer();
+        const bytes = new Uint8Array(buf);
+
+        // Wait for WASM if not ready yet
+        while (!wasmReady) await new Promise(r => setTimeout(r, 50));
+
+        // Copy into WASM memory
+        const ptr = Module._malloc(bytes.length);
+        Module.HEAPU8.set(bytes, ptr);
+
+        const rc = Module._init_table(ptr, bytes.length);
+        // Don't free — WASM references the buffer directly
+
+        if (rc !== 0) {
+            setStatus('table', 'error', 'Table error (' + rc + ')');
+            return;
+        }
+
+        const maxN_lo = Module._get_table_max_n_lo();
+        const maxN_hi = Module._get_table_max_n_hi();
+        const maxN = (BigInt(maxN_hi) << 32n) | BigInt(maxN_lo >>> 0);
+
+        const maxX_lo = Module._get_table_max_x_lo();
+        const maxX_hi = Module._get_table_max_x_hi();
+        const maxX = (BigInt(maxX_hi) << 32n) | BigInt(maxX_lo >>> 0);
+
+        const records = Module._get_num_records();
+        const stride = Module._get_stride();
+
+        tableReady = true;
+        setStatus('table', 'ok',
+            formatNumber(records.toString()) + ' records · stride ' +
+            formatNumber(stride.toString())
+        );
+
+        enableInput();
+    } catch (e) {
+        setStatus('table', 'error', 'Table failed to load');
+        console.error('Table load error:', e);
+    }
+}
+
+// ============================================================
+// Compute nth prime
+// ============================================================
+function compute() {
+    const raw = $('n-input').value.replace(/[\s,_]/g, '');
+    if (!raw || !/^\d+$/.test(raw)) {
+        showError('Enter a positive integer.');
+        return;
+    }
+
+    const n = BigInt(raw);
+    if (n === 0n) {
+        showError('n must be ≥ 1.');
+        return;
+    }
+
+    const maxN_lo = Module._get_table_max_n_lo();
+    const maxN_hi = Module._get_table_max_n_hi();
+    const maxN = (BigInt(maxN_hi) << 32n) | BigInt(maxN_lo >>> 0);
+
+    if (n > maxN) {
+        showError('n exceeds maximum (' + formatNumber(maxN.toString()) + '). Table covers primes up to 2 × 10¹².');
+        return;
+    }
+
+    // Show computing state
+    $('result-card').classList.remove('visible');
+    $('error-card').classList.remove('visible');
+    $('computing').classList.add('visible');
+    $('compute-btn').disabled = true;
+
+    // Defer to let UI update
+    setTimeout(() => {
+        const n_lo = Number(n & 0xFFFFFFFFn);
+        const n_hi = Number((n >> 32n) & 0xFFFFFFFFn);
+
+        Module._query_nth_prime(n_lo, n_hi);
+
+        const err = Module._get_error();
+        $('computing').classList.remove('visible');
+        $('compute-btn').disabled = false;
+
+        if (err !== 0) {
+            const msgs = {
+                1: 'n must be ≥ 1.',
+                2: 'n exceeds table range.',
+                3: 'Internal error: prime not found in block.'
+            };
+            showError(msgs[err] || 'Unknown error (' + err + ')');
+            return;
+        }
+
+        const res_lo = Module._get_result_lo();
+        const res_hi = Module._get_result_hi();
+        const result = (BigInt(res_hi) << 32n) | BigInt(res_lo >>> 0);
+        const time_us = Module._get_time_us();
+
+        showResult(raw, result, time_us);
+    }, 20);
+}
+
+function showResult(nStr, prime, timeUs) {
+    $('error-card').classList.remove('visible');
+
+    const card = $('result-card');
+    card.classList.remove('error-card');
+
+    $('result-label').textContent = 'p(' + formatNumber(nStr) + ') =';
+    $('result-value').textContent = formatNumber(prime.toString());
+
+    let timeStr;
+    if (timeUs < 1000) {
+        timeStr = timeUs + ' μs';
+    } else if (timeUs < 1000000) {
+        timeStr = (timeUs / 1000).toFixed(1) + ' ms';
+    } else {
+        timeStr = (timeUs / 1000000).toFixed(3) + ' s';
+    }
+
+    const digits = prime.toString().length;
+
+    $('result-meta').innerHTML =
+        '<span>Time: <span class="val">' + timeStr + '</span></span>' +
+        '<span>Digits: <span class="val">' + digits + '</span></span>';
+
+    card.classList.add('visible');
+}
+
+function showError(msg) {
+    $('result-card').classList.remove('visible');
+    $('computing').classList.remove('visible');
+    const card = $('error-card');
+    card.classList.add('error-card', 'visible');
+    $('error-msg').textContent = msg;
+}
+
+// ============================================================
+// Example chips
+// ============================================================
+function tryExample(val) {
+    $('n-input').value = val;
+    compute();
+}
+
+// ============================================================
+// Event listeners
+// ============================================================
+$('compute-btn').addEventListener('click', compute);
+$('n-input').addEventListener('keydown', e => {
+    if (e.key === 'Enter') compute();
+});
+
+// ============================================================
+// Boot
+// ============================================================
+// Boot after WASM glue is loaded
+function boot() {
+    loadWasm();
+    loadTable();
+}
+</script>
+
+<!-- WASM glue — this file is generated by build_wasm.sh -->
+<script src="nth_prime.js" onload="boot()" onerror="boot()"></script>
+
+</body>
+</html>

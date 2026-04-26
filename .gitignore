@@ -1,0 +1,24 @@
+# Compiled binaries
+nth_prime
+*.o
+
+# WASM build artifacts (keep the committed ones in docs/)
+*.wasm
+nth_prime.js
+!docs/nth_prime.js
+!docs/nth_prime.wasm
+
+# Table files (keep the one in docs/)
+*.dat
+!docs/pi.dat
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Editor files
+*.swp
+*.swo
+*~
+.vscode/
+.idea/
