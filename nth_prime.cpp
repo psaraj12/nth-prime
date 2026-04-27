@@ -57,36 +57,53 @@ vector<int> simple_primes(u64 limit) {
 
     return primes;
 }
-
 u64 find_nth_inside_block(u64 L, u64 R, u64 need) {
-    u64 len = R - L + 1;
-    vector<char> is_prime(len, true);
+    const u64 SUB = 2'000'000;   // tune: 1M, 2M, 4M, 8M
 
-    if (L == 0) {
-        if (len > 0) is_prime[0] = false;
-        if (len > 1) is_prime[1] = false;
-    } else if (L == 1) {
-        is_prime[0] = false;
+    // handle prime 2
+    if (L <= 2 && 2 <= R) {
+        if (need == 1) return 2;
+        need--;
     }
 
     u64 root = sqrt((long double)R) + 1;
     auto primes = simple_primes(root);
 
-    for (u64 p : primes) {
-        u64 start = max(p * p, ((L + p - 1) / p) * p);
+    for (u64 blockL = L; blockL <= R; blockL += SUB) {
+        u64 blockR = min(R, blockL + SUB - 1);
 
-        for (u64 x = start; x <= R; x += p) {
-            is_prime[x - L] = false;
+        u64 oddL = (blockL & 1) ? blockL : blockL + 1;
+        if (oddL > blockR) continue;
+
+        u64 odd_count = ((blockR - oddL) / 2) + 1;
+        vector<char> is_prime(odd_count, true);
+        if (oddL == 1) {
+            is_prime[0] = false;
         }
-    }
 
-    u64 count = 0;
+        for (u64 p : primes) {
+            if (p == 2) continue;
 
-    for (u64 i = 0; i < len; i++) {
-        if (is_prime[i]) {
-            count++;
-            if (count == need)
-                return L + i;
+            u64 pp = p * p;
+            if (pp > blockR) break;
+
+            u64 start = max(pp, ((oddL + p - 1) / p) * p);
+
+            // make start odd
+            if ((start & 1) == 0) start += p;
+
+            for (u64 x = start; x <= blockR; x += 2 * p) {
+                is_prime[(x - oddL) / 2] = false;
+            }
+        }
+
+        for (u64 i = 0; i < odd_count; i++) {
+            if (is_prime[i]) {
+                need--;
+                if (need == 0) {
+                    return oddL + 2 * i;
+                }
+            }
         }
     }
 

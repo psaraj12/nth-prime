@@ -27,7 +27,9 @@ emcc -O3 \
     nth_prime_wasm.cpp
 
 echo ""
-echo "Done! Files created:"
-echo "  docs/nth_prime.js    (JS glue)"
-echo "  docs/nth_prime.wasm  (WASM binary)"
-ls -lh docs/nth_prime.js docs/nth_prime.wasm
+echo "Done! Output:"
+echo "  docs/nth_prime.js   (WASM glue)"
+echo "  docs/nth_prime.wasm (WASM binary)"
+echo ""
+echo "Test locally:"
+echo "  cd docs && python3 -m http.server 8080"

@@ -64,22 +64,18 @@ body::before {
     font-family: var(--serif);
     font-weight: 600;
     font-size: 2.4rem;
-    color: #e8ecf2;
-    letter-spacing: -0.5px;
-    margin-bottom: 4px;
+    letter-spacing: -0.02em;
+    margin-bottom: 8px;
 }
 
 .header h1 .fn {
     color: var(--accent);
-    font-style: italic;
 }
 
 .header .subtitle {
     font-family: var(--mono);
     font-size: 0.78rem;
     color: var(--text-dim);
-    letter-spacing: 0.5px;
-    margin-top: 8px;
 }
 
 /* Status bar */
@@ -93,46 +89,33 @@ body::before {
     color: var(--text-dim);
 }
 
-.status-bar .dot {
+.dot {
     display: inline-block;
     width: 7px;
     height: 7px;
     border-radius: 50%;
     margin-right: 6px;
-    position: relative;
-    top: -1px;
+    vertical-align: middle;
     background: var(--text-dim);
 }
 
-.status-bar .dot.ok { background: #34d399; }
-.status-bar .dot.loading {
-    background: var(--accent);
-    animation: pulse 1.2s ease-in-out infinite;
-}
-.status-bar .dot.error { background: var(--red); }
+.dot.ok { background: var(--cyan); box-shadow: 0 0 6px #5eead440; }
+.dot.error { background: var(--red); }
+.dot.loading { background: var(--accent); animation: pulse 1.2s infinite; }
 
-@keyframes pulse {
-    0%, 100% { opacity: 1; }
-    50% { opacity: 0.3; }
-}
+@keyframes pulse { 50% { opacity: 0.3; } }
 
-/* Input area */
+/* Input */
 .input-area {
-    background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    padding: 28px 28px 24px;
-    margin-bottom: 24px;
+    margin-bottom: 32px;
 }
 
 .input-area label {
     display: block;
     font-family: var(--mono);
-    font-size: 0.75rem;
+    font-size: 0.78rem;
     color: var(--text-dim);
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin-bottom: 12px;
+    margin-bottom: 10px;
 }
 
 .input-row {
@@ -142,15 +125,20 @@ body::before {
 
 .input-row input {
     flex: 1;
-    background: var(--surface2);
+    background: var(--surface);
     border: 1px solid var(--border);
-    border-radius: 8px;
-    padding: 14px 16px;
+    border-radius: 10px;
+    padding: 16px 18px;
     font-family: var(--mono);
     font-size: 1.1rem;
-    color: #e8ecf2;
+    color: var(--text);
     outline: none;
     transition: border-color 0.2s;
+}
+
+.input-row input::placeholder {
+    color: var(--text-dim);
+    opacity: 0.5;
 }
 
 .input-row input:focus {
@@ -158,23 +146,18 @@ body::before {
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-.input-row input::placeholder {
-    color: var(--text-dim);
-    font-size: 0.85rem;
-}
-
 .input-row button {
     background: var(--accent);
+    color: var(--bg);
     border: none;
-    border-radius: 8px;
-    padding: 14px 28px;
+    border-radius: 10px;
+    padding: 0 28px;
     font-family: var(--mono);
-    font-size: 0.85rem;
     font-weight: 700;
-    color: #07090f;
+    font-size: 0.88rem;
     cursor: pointer;
     transition: all 0.15s;
-    white-space: nowrap;
+    letter-spacing: 0.5px;
 }
 
 .input-row button:hover:not(:disabled) {
@@ -374,41 +357,45 @@ body::before {
 
 <div class="container">
     <div class="header">
-        <h1><span class="fn">p</span>(<span class="fn">n</span>) — Nth Prime</h1>
+        <h1><span class="fn">p</span>(<span class="fn">n</span>) &mdash; Nth Prime</h1>
         <div class="subtitle">Segmented sieve + precomputed table &middot; Runs in your browser via WASM</div>
     </div>
 
     <div class="status-bar">
-        <span><span class="dot" id="wasm-dot"></span><span id="wasm-status">Loading WASM…</span></span>
-        <span><span class="dot" id="table-dot"></span><span id="table-status">Loading table…</span></span>
+        <span><span class="dot loading" id="wasm-dot"></span><span id="wasm-status">Loading WASM…</span></span>
+        <span><span class="dot loading" id="table-dot"></span><span id="table-status">Loading table…</span></span>
     </div>
 
     <div class="input-area">
-        <label>Enter n — find the n-th prime</label>
+        <label>Enter n &mdash; find the n-th prime</label>
         <div class="input-row">
-            <input type="text" id="n-input" placeholder="e.g. 1000000000" inputmode="numeric" disabled>
+            <input type="text" id="n-input" placeholder="e.g. 1000000000" autocomplete="off" spellcheck="false">
             <button id="compute-btn" disabled>Compute</button>
-        </div>
-        <div class="computing" id="computing">
-            <div class="spinner"></div>
-            <span>Sieving…</span>
         </div>
     </div>
 
+    <div class="computing" id="computing">
+        <div class="spinner"></div>
+        <span>Sieving…</span>
+    </div>
+
+    <!-- Result card -->
     <div class="result-card" id="result-card">
-        <div class="result-label" id="result-label">p(n) =</div>
+        <div class="result-label" id="result-label"></div>
         <div class="result-value" id="result-value"></div>
         <div class="result-meta" id="result-meta"></div>
     </div>
 
-    <div class="result-card" id="error-card">
+    <!-- Error card -->
+    <div class="result-card" id="error-card" style="display:none">
         <div class="error-msg" id="error-msg"></div>
     </div>
 
+    <!-- Examples -->
     <div class="examples">
-        <div class="label">Try these</div>
+        <div class="label">Quick examples</div>
         <div class="example-chips">
-            <button onclick="tryExample('1000')">p(1,000)</button>
+            <button onclick="tryExample('1000')">p(10³)</button>
             <button onclick="tryExample('1000000')">p(10⁶)</button>
             <button onclick="tryExample('1000000000')">p(10⁹)</button>
             <button onclick="tryExample('10000000000')">p(10¹⁰)</button>
@@ -417,184 +404,134 @@ body::before {
         </div>
     </div>
 
+    <!-- Info -->
     <div class="info">
         <h2>How it works</h2>
-        <p>
-            This calculator finds the exact <em>n</em>-th prime number for any
-            <code>1 ≤ n ≤ 73,302,249,005</code> — covering all primes up to 2 trillion.
-        </p>
-        <p>The algorithm runs entirely in your browser using WebAssembly:</p>
         <ul>
-            <li><strong>Precomputed table</strong> — a 521 KB file (<code>pi.dat</code>) stores
-                cumulative prime counts π(k) at every 30-million interval up to 2×10¹².</li>
-            <li><strong>Binary search</strong> — given <em>n</em>, a binary search over the
-                66,667 table entries locates which 30M-wide block contains the <em>n</em>-th prime.</li>
-            <li><strong>Segmented sieve</strong> — a sieve of Eratosthenes runs within that
-                single block to find the exact prime. The small primes (up to √2×10¹² ≈ 1.41M)
-                are precomputed once at startup.</li>
+            <li><strong>Precomputed table</strong> (<code>pi.dat</code>, 521 KB) &mdash; stores cumulative prime counts at every 30,000,000 interval up to 2×10¹².</li>
+            <li><strong>Binary search</strong> &mdash; locates which 30M-wide block contains the nth prime. O(log 66667) = ~17 comparisons.</li>
+            <li><strong>Sub-block segmented sieve</strong> &mdash; runs Eratosthenes in 2M chunks (odd-only) within that block. Small primes up to √(2×10¹²) ≈ 1.41M are precomputed once at startup.</li>
         </ul>
-        <p>
-            Typical query time is <strong>under 1 second</strong> on modern hardware.
-            No server involved — everything runs client-side.
-        </p>
-
-        <h2>pi.dat format</h2>
-        <p>
-            Binary file with an 8-byte magic (<code>PIFIN01\0</code>), followed by
-            <code>max_x</code>, <code>stride</code>, <code>records</code> (each u64),
-            32 bytes padding, then <code>records</code> × u64 cumulative prime counts.
-        </p>
+        <p>Covers n from 1 to <code>73,302,249,005</code> (all primes up to 2 trillion). Typical query time: <strong>under 300ms</strong> in the browser.</p>
     </div>
 
     <div class="footer">
-        Built by <a href="https://github.com/p-santhiagu">p-santhiagu</a>
-        &middot; Source on <a href="https://github.com/p-santhiagu/nth-prime">GitHub</a>
+        <a href="https://github.com/psaraj12/nth-prime">Source on GitHub</a>
     </div>
 </div>
 
 <script>
 // ============================================================
-// State
+// Globals
 // ============================================================
-let Module = null;
-let tableReady = false;
-let wasmReady = false;
-
 const $ = id => document.getElementById(id);
+let Module = null;
+let wasmReady = false;
+let tableReady = false;
 
 // ============================================================
-// UI helpers
+// Status helpers
 // ============================================================
-function setStatus(which, state, text) {
-    const dot = $(which + '-dot');
-    const label = $(which + '-status');
+function setStatus(prefix, state, text) {
+    const dot = $(prefix + '-dot');
+    const span = $(prefix + '-status');
     dot.className = 'dot ' + state;
-    label.textContent = text;
+    span.textContent = text;
 }
 
-function formatNumber(s) {
-    // Add commas to a numeric string
-    return s.replace(/\B(?=(\d{3})+(?!\d))/g, ',');
+function formatNumber(n) {
+    return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
 
-function enableInput() {
-    $('n-input').disabled = false;
-    $('compute-btn').disabled = false;
-    $('n-input').focus();
+function enableUI() {
+    if (wasmReady && tableReady) {
+        $('compute-btn').disabled = false;
+    }
 }
 
 // ============================================================
-// Load WASM
+// WASM + Table loading
 // ============================================================
 async function loadWasm() {
-    setStatus('wasm', 'loading', 'Loading WASM…');
     if (typeof NthPrimeModule === 'undefined') {
         setStatus('wasm', 'error', 'nth_prime.js not found — run build_wasm.sh first');
-        console.error('NthPrimeModule not defined. Build WASM with: ./build_wasm.sh');
         return;
     }
     try {
         Module = await NthPrimeModule();
         wasmReady = true;
         setStatus('wasm', 'ok', 'WASM ready');
+        enableUI();
     } catch (e) {
         setStatus('wasm', 'error', 'WASM failed: ' + e.message);
         console.error('WASM load error:', e);
     }
 }
 
-// ============================================================
-// Load pi.dat and initialize
-// ============================================================
 async function loadTable() {
-    setStatus('table', 'loading', 'Loading table…');
+    if (!wasmReady) return;
     try {
         const resp = await fetch('pi.dat');
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const buf = await resp.arrayBuffer();
         const bytes = new Uint8Array(buf);
 
-        // Wait for WASM if not ready yet
-        while (!wasmReady) await new Promise(r => setTimeout(r, 50));
-
-        // Copy into WASM memory
         const ptr = Module._malloc(bytes.length);
         Module.HEAPU8.set(bytes, ptr);
 
         const rc = Module._init_table(ptr, bytes.length);
-        // Don't free — WASM references the buffer directly
-
         if (rc !== 0) {
-            setStatus('table', 'error', 'Table error (' + rc + ')');
+            setStatus('table', 'error', 'Table parse error: ' + rc);
             return;
         }
 
         const maxN_lo = Module._get_table_max_n_lo();
         const maxN_hi = Module._get_table_max_n_hi();
-        const maxN = (BigInt(maxN_hi) << 32n) | BigInt(maxN_lo >>> 0);
-
-        const maxX_lo = Module._get_table_max_x_lo();
-        const maxX_hi = Module._get_table_max_x_hi();
-        const maxX = (BigInt(maxX_hi) << 32n) | BigInt(maxX_lo >>> 0);
-
+        const maxN = maxN_lo + maxN_hi * 4294967296;
         const records = Module._get_num_records();
-        const stride = Module._get_stride();
 
         tableReady = true;
-        setStatus('table', 'ok',
-            formatNumber(records.toString()) + ' records · stride ' +
-            formatNumber(stride.toString())
-        );
-
-        enableInput();
+        setStatus('table', 'ok', formatNumber(records) + ' records — max n = ' + formatNumber(maxN));
+        enableUI();
     } catch (e) {
-        setStatus('table', 'error', 'Table failed to load');
+        setStatus('table', 'error', 'Table load failed: ' + e.message);
         console.error('Table load error:', e);
     }
 }
 
 // ============================================================
-// Compute nth prime
+// Compute
 // ============================================================
 function compute() {
-    const raw = $('n-input').value.replace(/[\s,_]/g, '');
-    if (!raw || !/^\d+$/.test(raw)) {
-        showError('Enter a positive integer.');
-        return;
-    }
+    const raw = $('n-input').value.trim().replace(/,/g, '');
+    if (!raw || !wasmReady || !tableReady) return;
+
+    $('error-card').classList.remove('visible');
+    $('error-card').style.display = 'none';
+    $('result-card').classList.remove('visible');
+    $('result-card').style.display = 'none';
 
     const n = BigInt(raw);
-    if (n === 0n) {
-        showError('n must be ≥ 1.');
-        return;
-    }
+    if (n < 1n) { showError('n must be ≥ 1'); return; }
 
     const maxN_lo = Module._get_table_max_n_lo();
     const maxN_hi = Module._get_table_max_n_hi();
-    const maxN = (BigInt(maxN_hi) << 32n) | BigInt(maxN_lo >>> 0);
+    const maxN = BigInt(maxN_lo) + BigInt(maxN_hi) * 4294967296n;
+    if (n > maxN) { showError('n exceeds maximum supported value: ' + formatNumber(maxN.toString())); return; }
 
-    if (n > maxN) {
-        showError('n exceeds maximum (' + formatNumber(maxN.toString()) + '). Table covers primes up to 2 × 10¹².');
-        return;
-    }
+    const n_lo = Number(n & 0xFFFFFFFFn);
+    const n_hi = Number((n >> 32n) & 0xFFFFFFFFn);
 
-    // Show computing state
-    $('result-card').classList.remove('visible');
-    $('error-card').classList.remove('visible');
     $('computing').classList.add('visible');
     $('compute-btn').disabled = true;
 
-    // Defer to let UI update
     setTimeout(() => {
-        const n_lo = Number(n & 0xFFFFFFFFn);
-        const n_hi = Number((n >> 32n) & 0xFFFFFFFFn);
-
         Module._query_nth_prime(n_lo, n_hi);
 
-        const err = Module._get_error();
         $('computing').classList.remove('visible');
         $('compute-btn').disabled = false;
 
+        const err = Module._get_error();
         if (err !== 0) {
             const msgs = {
                 1: 'n must be ≥ 1.',
@@ -616,6 +553,7 @@ function compute() {
 
 function showResult(nStr, prime, timeUs) {
     $('error-card').classList.remove('visible');
+    $('error-card').style.display = 'none';
 
     const card = $('result-card');
     card.classList.remove('error-card');
@@ -638,14 +576,17 @@ function showResult(nStr, prime, timeUs) {
         '<span>Time: <span class="val">' + timeStr + '</span></span>' +
         '<span>Digits: <span class="val">' + digits + '</span></span>';
 
+    card.style.display = 'block';
     card.classList.add('visible');
 }
 
 function showError(msg) {
     $('result-card').classList.remove('visible');
+    $('result-card').style.display = 'none';
     $('computing').classList.remove('visible');
     const card = $('error-card');
     card.classList.add('error-card', 'visible');
+    card.style.display = 'block';
     $('error-msg').textContent = msg;
 }
 
@@ -668,10 +609,10 @@ $('n-input').addEventListener('keydown', e => {
 // ============================================================
 // Boot
 // ============================================================
-// Boot after WASM glue is loaded
 function boot() {
-    loadWasm();
-    loadTable();
+    loadWasm().then(() => {
+        if (wasmReady) loadTable();
+    });
 }
 </script>
 
