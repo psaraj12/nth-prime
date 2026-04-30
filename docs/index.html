@@ -400,7 +400,7 @@ body::before {
             <button onclick="tryExample('1000000000')">p(10⁹)</button>
             <button onclick="tryExample('10000000000')">p(10¹⁰)</button>
             <button onclick="tryExample('50000000000')">p(5×10¹⁰)</button>
-            <button onclick="tryExample('73302249005')">p(max)</button>
+            <button onclick="tryMax()">p(max)</button>
         </div>
     </div>
 
@@ -416,7 +416,7 @@ body::before {
     </div>
 
     <div class="footer">
-        <a href="https://github.com/psaraj12/nth-prime">Source on GitHub</a>
+        <a href="https://github.com/p-santhiagu/nth-prime">Source on GitHub</a>
     </div>
 </div>
 
@@ -438,7 +438,15 @@ function setStatus(prefix, state, text) {
     dot.className = 'dot ' + state;
     span.textContent = text;
 }
+function getMaxN() {
+    const maxN_lo = Module._get_table_max_n_lo();
+    const maxN_hi = Module._get_table_max_n_hi();
+    return BigInt(maxN_lo) + BigInt(maxN_hi) * 4294967296n;
+}
 
+function tryMax() {
+    tryExample(getMaxN().toString());
+}
 function formatNumber(n) {
     return n.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ',');
 }
@@ -471,7 +479,11 @@ async function loadWasm() {
 async function loadTable() {
     if (!wasmReady) return;
     try {
-        const resp = await fetch('pi.dat');
+	    const PI_DAT_VERSION = "v3";
+	
+        const resp = await fetch(`pi.dat?${PI_DAT_VERSION}`, {
+    cache: "force-cache"
+});
         if (!resp.ok) throw new Error('HTTP ' + resp.status);
         const buf = await resp.arrayBuffer();
         const bytes = new Uint8Array(buf);
