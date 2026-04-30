@@ -416,7 +416,7 @@ body::before {
     </div>
 
     <div class="footer">
-        <a href="https://github.com/p-santhiagu/nth-prime">Source on GitHub</a>
+        <a href="https://github.com/psaraj12/nth-prime">Source on GitHub</a>
     </div>
 </div>
 
@@ -510,7 +510,7 @@ async function loadTable() {
         console.error('Table load error:', e);
     }
 }
-
+const nthCache = new Map();
 // ============================================================
 // Compute
 // ============================================================
@@ -538,29 +538,46 @@ function compute() {
     $('compute-btn').disabled = true;
 
     setTimeout(() => {
-        Module._query_nth_prime(n_lo, n_hi);
+    const cacheKey = n.toString();
+
+    if (nthCache.has(cacheKey)) {
+        const cached = nthCache.get(cacheKey);
 
         $('computing').classList.remove('visible');
         $('compute-btn').disabled = false;
 
-        const err = Module._get_error();
-        if (err !== 0) {
-            const msgs = {
-                1: 'n must be ≥ 1.',
-                2: 'n exceeds table range.',
-                3: 'Internal error: prime not found in block.'
-            };
-            showError(msgs[err] || 'Unknown error (' + err + ')');
-            return;
-        }
+        showResult(raw, cached.result, 0);
+        return;
+    }
 
-        const res_lo = Module._get_result_lo();
-        const res_hi = Module._get_result_hi();
-        const result = (BigInt(res_hi) << 32n) | BigInt(res_lo >>> 0);
-        const time_us = Module._get_time_us();
+    Module._query_nth_prime(n_lo, n_hi);
 
-        showResult(raw, result, time_us);
-    }, 20);
+    $('computing').classList.remove('visible');
+    $('compute-btn').disabled = false;
+
+    const err = Module._get_error();
+    if (err !== 0) {
+        const msgs = {
+            1: 'n must be ≥ 1.',
+            2: 'n exceeds table range.',
+            3: 'Internal error: prime not found in block.'
+        };
+        showError(msgs[err] || 'Unknown error (' + err + ')');
+        return;
+    }
+
+    const res_lo = Module._get_result_lo();
+    const res_hi = Module._get_result_hi();
+    const result = (BigInt(res_hi) << 32n) | BigInt(res_lo >>> 0);
+    const time_us = Module._get_time_us();
+
+    nthCache.set(cacheKey, { result, time_us });
+    if (nthCache.size > 100) {
+    const firstKey = nthCache.keys().next().value;
+    nthCache.delete(firstKey);
+}
+    showResult(raw, result, time_us);
+}, 20);
 }
 
 function showResult(nStr, prime, timeUs) {
